@@ -7,6 +7,7 @@
 #include <SDL/SDL.h>
 #include "./presentation/presentation.h"
 
+#define DEBUG false 
 #define VIDE        		0
 #define DKJR       		1
 #define CROCO       		2
@@ -91,28 +92,34 @@ typedef struct
 int main(int argc, char* argv[])
 {
 	int evt;
+	pthread_mutex_init(&mutexGrilleJeu, NULL);	
+
+
 
 	ouvrirFenetreGraphique();
-
+	////////////////////////////////////////////////////////////////////////////
+	//////////////////	affichage initial ! ////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
+	afficherCage(1);
 	afficherCage(2);
 	afficherCage(3);
 	afficherCage(4);
-
-	afficherRireDK();
-
-	afficherCle(3);
-
-	afficherCroco(11, 2);
-	afficherCroco(17, 1);
+	// afficherRireDK();
+		// creation d un thread ici
+	//afficherCle(3);
+	/* afficherCroco(11, 2);
+	// afficherCroco(17, 1);
 	afficherCroco(0, 3);
 	afficherCroco(12, 5);
 	afficherCroco(18, 4);
 
-	afficherDKJr(11, 9, 1);
-	afficherDKJr(6, 19, 7);
+*/
+
+//	afficherDKJr(11, 9, 1);
+//	afficherDKJr(6, 19, 7);
 	afficherDKJr(0, 0, 9);
 	
-	afficherCorbeau(10, 2);
+/*	afficherCorbeau(10, 2);
 	afficherCorbeau(16, 1);
 	
 	effacerCarres(9, 10, 2, 1);
@@ -120,6 +127,18 @@ int main(int argc, char* argv[])
 	afficherEchec(1);
 	afficherScore(1999);
 
+
+*/
+	afficherScore(0);
+
+	int *p ; 
+	
+	p = (int*) malloc(sizeof((void*) p));
+	pthread_create(&threadCle ,NULL ,FctThreadCle ,(void *)p);
+
+	
+	
+	
 	while (1)
 	{
 	    evt = lireEvenement();
@@ -179,3 +198,45 @@ void afficherGrilleJeu()
 
    printf("\n");   
 }
+
+
+
+// -------------------------------------------------
+// todo 
+// check if the timing is correct 
+
+void* FctThreadCle(void *){
+
+
+	int time = 1 ;
+	struct timespec temps = { 1, 700000000 };
+	bool sence  = true;
+
+	while(1){
+		effacerCarres(3, 12, 4, 14);		
+		pthread_mutex_lock(&mutexGrilleJeu);  
+			
+		if(sence)
+			time ++ ;
+		else
+			time-- ;
+		if(time >= 4 || time <= 1)	// pour faire balancer dans les 2 sences
+			sence = !sence ;
+		if(DEBUG)
+			printf("sence = %d et time %d \n",sence,time);
+
+		if(time == 1 ){
+				grilleJeu[0][1].type = CLE ;
+		}else{
+				grilleJeu[0][1].type = VIDE ;
+		}
+		afficherCle(time) ; 
+		pthread_mutex_unlock(&mutexGrilleJeu); 
+		nanosleep(&temps, NULL) ; 
+
+	}
+
+
+}
+
+//------------------------------------------------
