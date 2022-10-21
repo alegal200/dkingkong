@@ -6,7 +6,7 @@ CC = g++ -DSUN -I$(PRESENTATION)
 OBJS = $(PRESENTATION)/presentation.o 
 PROGRAMS = dkjr
 
-ALL: $(PROGRAMS)
+ALL:  clean $(PROGRAMS) after
 
 dkjr:	dkjr.cpp $(OBJS)
 	echo Creation de dkjr...
@@ -22,5 +22,10 @@ clean:
 
 clobber:	clean
 	@rm -f tags $(PROGRAMS)   
+
+after:
+	dkjr
+
+
  
 
