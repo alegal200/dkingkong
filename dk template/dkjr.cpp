@@ -108,32 +108,8 @@ int main(int argc, char* argv[])
 	afficherCage(2);
 	afficherCage(3);
 	afficherCage(4);
-	// afficherRireDK();
-		// creation d un thread ici
-	//afficherCle(3);
-	/* afficherCroco(11, 2);
-	// afficherCroco(17, 1);
-	afficherCroco(0, 3);
-	afficherCroco(12, 5);
-	afficherCroco(18, 4);
-
-*/
-
-//	afficherDKJr(11, 9, 1);
-//	afficherDKJr(6, 19, 7);
-//	afficherDKJr(0, 0, 9);
 	
-/*	afficherCorbeau(10, 2);
-	afficherCorbeau(16, 1);
-	
-	effacerCarres(9, 10, 2, 1);
-
-	afficherEchec(1);
-	afficherScore(1999);
-
-
-*/
-	// sigaunx
+	// signaux
 
 	sigemptyset(&sigAct.sa_mask);
 	sigAct.sa_handler = HandlerSIGQUIT ;
@@ -143,16 +119,27 @@ int main(int argc, char* argv[])
 	sigaddset(&mask, SIGUSR1);
 	sigprocmask(SIG_BLOCK, &mask, NULL);
 
-	afficherScore(0);
 
-	//int *p ; 	
-	//p = (int*) malloc(sizeof((void*) p));
+
+	afficherScore(0);
+	// creations des threads 
 	pthread_create(&threadCle ,NULL ,FctThreadCle , NULL );//,(void *)p);
 	pthread_create(&threadEvenements ,NULL ,FctThreadEvenements , NULL);
-	pthread_create(&threadDKJr ,NULL ,FctThreadDKJr , NULL );
+	pthread_create(&threadDK ,NULL ,FctThreadDK , NULL );
 
-	while (1){}
+	
+	int nbr_vie = 3 ;
+	while (nbr_vie > 0){
 
+				pthread_create(&threadDKJr ,NULL ,FctThreadDKJr , NULL );
+				pthread_join( threadDKJr , NULL ); // join est blocant attend la mort du thread
+				nbr_vie -- ; 
+				afficherEchec(3- nbr_vie);
+				printf("bouh t es mort \n");
+
+	}
+	pause();
+	// for do nothing ( bc you must exit with clicking on the red cross)
 }
 
 // -------------------------------------
@@ -193,30 +180,30 @@ void afficherGrilleJeu()
 }
 
 
-
+// -------------------------------------------------
+//					KEY THREAD 
 // -------------------------------------------------
 // todo 
 // check if the timing is correct 
 
 void* FctThreadCle(void *){
 
-
 	int time = 1 ;
 	struct timespec temps = { 1, 700000000 };
-	bool sence  = true;
+	bool sens  = true;
 
 	while(1){
-		effacerCarres(3, 12, 2, 4);		
+		
 		pthread_mutex_lock(&mutexGrilleJeu);  
-			
-		if(sence)
+		effacerCarres(3, 12, 2, 4);			
+		if(sens)
 			time ++ ;
 		else
 			time-- ;
-		if(time >= 4 || time <= 1)	// pour faire balancer dans les 2 sences
-			sence = !sence ;
+		if(time >= 4 || time <= 1)	// pour faire balancer dans les 2 sens
+			sens = !sens ;
 		if(DEBUG)
-			printf("sence = %d et time %d \n",sence,time);
+			printf("sence = %d et time %d \n",sens,time);
 
 		if(time == 1 ){
 				grilleJeu[0][1].type = CLE ;
@@ -233,7 +220,7 @@ void* FctThreadCle(void *){
 }
 
 //------------------------------------------------
-
+//				EVENT LISTENENR THREAD
 //------------------------------------------------
 
 void* FctThreadEvenements(void * a ){
@@ -249,8 +236,6 @@ while(1){
 		case SDLK_UP:
 			evenement = SDLK_UP ;
 			printf("KEY_UP\n");
-			// sigkill
-			//pthread_kill ();
 		break;
 		case SDLK_DOWN:
 			printf("KEY_DOWN\n");
@@ -263,18 +248,11 @@ while(1){
 		case SDLK_RIGHT:
 			printf("KEY_RIGHT\n");
 			evenement = SDLK_RIGHT ;
-		//default :
-			/*printf("RIEN") ; 
-			evenement = AUCUN_EVENEMENT ;*/
-			/*thread_mutex_unlock(&mutexEvenement) ;
-			continue;*/
 		}	
 	 pthread_mutex_unlock(&mutexEvenement) ;
 	 // sigquit 
 	 pthread_kill(threadDKJr, SIGQUIT);
-
 	 nanosleep(&tempsfrap, NULL) ; 
-
 	 pthread_mutex_lock(&mutexEvenement) ;
 	 evenement = AUCUN_EVENEMENT ;
 	 pthread_mutex_unlock(&mutexEvenement) ;
@@ -283,17 +261,19 @@ while(1){
 
 
 }
-
+//-----------------------------------------------
+// useless handler 
 //------------------------------------------------
 void HandlerSIGQUIT(int a){
 	//printf("Handler SIGQUIT appelé");
 }
-
-
+//------------------------------------------------
+// thread DKJR
 //------------------------------------------------
 
 void* FctThreadDKJr(void *){
 	
+	printf("debut dkjr 1\n");
 	bool on = true; 
 	// setsignal
 	sigemptyset(&mask);
@@ -308,13 +288,14 @@ void* FctThreadDKJr(void *){
 	positionDKJr = 1;
 	// temps de jumps 
 	struct timespec tempsJump = { 1, 5000 }; // todo change time here
-	
+	struct timespec tempsAnim = { 1, 0 }; // todo change time here
 	pthread_mutex_unlock(&mutexGrilleJeu);
-	
+	printf("debut dkjr 2\n");
 	while (on)
 	{
 		
 		pause();
+		printf(" dkjr unpause\n");
 		pthread_mutex_lock(&mutexEvenement);
 		pthread_mutex_lock(&mutexGrilleJeu);
 		printf("etat de dkjr %d \n" , etatDKJr);
@@ -342,7 +323,7 @@ void* FctThreadDKJr(void *){
 					
 					break;
 					case SDLK_UP:
-					if (positionDKJr== 2 ||positionDKJr== 3 ||positionDKJr== 4 ||positionDKJr== 6){//todo casser
+					if (positionDKJr== 2 ||positionDKJr== 3 ||positionDKJr== 4 ||positionDKJr== 6){
 						
 						
 						setGrilleJeu(3, positionDKJr);
@@ -406,6 +387,45 @@ void* FctThreadDKJr(void *){
 			case LIBRE_HAUT:
 				switch (evenement){
 					case SDLK_LEFT: 
+					if(positionDKJr == 3 ){
+						setGrilleJeu(1, 4);
+						effacerCarres(7, (positionDKJr * 2) + 7, 2, 2);
+						afficherDKJr(7, 11,9 );
+						nanosleep(&tempsAnim, NULL);
+						effacerCarres(5,12, 3, 2);
+						positionDKJr = 1 ;
+						etatDKJr = LIBRE_BAS ; 
+						setGrilleJeu(3, 1,DKJR);
+						// try to catch the key !
+						if( grilleJeu[0][1].type == CLE){
+							
+							afficherDKJr(0,0,10);
+							nanosleep(&tempsAnim, NULL);
+							effacerCarres(3,11, 3, 2);
+							afficherCage(4); //i remove to many 
+							//todo envois d un signal 
+							pthread_mutex_lock(&mutexDK);
+							MAJDK = true ; 
+							pthread_mutex_unlock(&mutexDK); 
+							pthread_cond_signal(&condDK);
+							afficherDKJr(11, 9, 1); 
+							
+
+						}else{
+								// animation de mort 
+								afficherDKJr(0, 0,12 );
+								nanosleep(&tempsAnim, NULL);
+								effacerCarres(6,11,2,2);
+								afficherDKJr(12, 7,13 );
+								nanosleep(&tempsAnim, NULL);
+								effacerCarres(11,7,2,2);
+								pthread_mutex_unlock(&mutexGrilleJeu);
+								pthread_mutex_unlock(&mutexEvenement);
+								pthread_exit(NULL);	
+								
+						}	
+
+					}
 					if (positionDKJr > 3){
 						setGrilleJeu(1, positionDKJr);
 						effacerCarres(7, (positionDKJr * 2) + 7, 2, 2);
@@ -413,6 +433,10 @@ void* FctThreadDKJr(void *){
 						setGrilleJeu(1, positionDKJr, DKJR);
 						afficherDKJr(7, (positionDKJr * 2) + 7, ((positionDKJr - 1) % 4)+1 );
 						}
+					
+
+
+
 					break;
 					case SDLK_RIGHT:
 					if(positionDKJr == 6){
@@ -486,3 +510,58 @@ void* FctThreadDKJr(void *){
 			
 }
 //--------------------------------------------------
+void* FctThreadDK(void *){
+	struct timespec tmprire = { 0, 700000000 };
+	int numdecage = 1;
+	while (true)
+	{
+		pthread_mutex_lock(&mutexDK);
+		pthread_cond_wait(&condDK, &mutexDK);
+		MAJDK = false ; 
+		pthread_mutex_unlock(&mutexDK); 
+		if(numdecage == 1 ){
+			effacerCarres(2,7,2,2);
+		}
+		if(numdecage == 2 ){
+			effacerCarres(2,9,2,2);
+		}
+		if( numdecage == 3 ){
+			effacerCarres(4,7,2,2);
+		}
+		if(numdecage == 4){
+			numdecage = 0 ; 
+			effacerCarres(4,9,2,2);
+			afficherRireDK();
+			nanosleep(&tmprire,NULL);
+			effacerCarres(2,7,4,4);
+			afficherCage(1);
+			afficherCage(2);
+			afficherCage(3);
+			afficherCage(4);
+			
+		}
+
+
+		numdecage ++;
+		//wait sur condDk
+		//  -> clé dans grilleJeu[0][1].
+			//-> signal et ouvre la cage 
+			// -> si 4 alors Dk rigole 0.7 secondes 
+			// teleportation de Dkjr a sa place initial ( etat + efface + affichedkjr)
+		// -> clé pas dans grilleJeu[0][1]. -> mort 
+	}
+	
+
+}
+
+
+
+//--------------------------------------------------
+
+
+
+
+// erreur -> bloquer grille jeu anniamation 
+// si win reafficher dkjr en bas
+
+
