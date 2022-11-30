@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 	pthread_create(&threadCle ,NULL ,FctThreadCle , NULL );//,(void *)p);
 	pthread_create(&threadEvenements ,NULL ,FctThreadEvenements , NULL);
 	pthread_create(&threadDK ,NULL ,FctThreadDK , NULL );
-
+	pthread_create(&threadScore ,NULL ,FctThreadScore , NULL );
 	
 	int nbr_vie = 3 ;
 	while (nbr_vie > 0){
@@ -189,7 +189,7 @@ void afficherGrilleJeu()
 void* FctThreadCle(void *){
 
 	int time = 1 ;
-	struct timespec temps = { 1, 700000000 };
+	struct timespec temps = { 0, 700000000 };
 	bool sens  = true;
 
 	while(1){
@@ -402,14 +402,17 @@ void* FctThreadDKJr(void *){
 							afficherDKJr(0,0,10);
 							nanosleep(&tempsAnim, NULL);
 							effacerCarres(3,11, 3, 2);
-							afficherCage(4); //i remove to many 
-							//todo envois d un signal 
+							afficherCage(4); 
 							pthread_mutex_lock(&mutexDK);
 							MAJDK = true ; 
 							pthread_mutex_unlock(&mutexDK); 
 							pthread_cond_signal(&condDK);
 							afficherDKJr(11, 9, 1); 
-							
+							pthread_mutex_lock(&mutexScore);
+							score += 10 ; 
+							MAJScore = true ;
+							pthread_mutex_unlock(&mutexScore);
+							pthread_cond_signal(&condScore);
 
 						}else{
 								// animation de mort 
@@ -538,26 +541,46 @@ void* FctThreadDK(void *){
 			afficherCage(2);
 			afficherCage(3);
 			afficherCage(4);
+			pthread_mutex_lock(&mutexScore);
+			score += 10 ; 
+			MAJScore = true ;
+			pthread_mutex_unlock(&mutexScore);
+			pthread_cond_signal(&condScore);
 			
 		}
 
 
 		numdecage ++;
-		//wait sur condDk
-		//  -> clé dans grilleJeu[0][1].
-			//-> signal et ouvre la cage 
-			// -> si 4 alors Dk rigole 0.7 secondes 
-			// teleportation de Dkjr a sa place initial ( etat + efface + affichedkjr)
-		// -> clé pas dans grilleJeu[0][1]. -> mort 
+		
 	}
 	
 
 }
 
 
-
+//--------------------------------------------------
+//		thread score 
 //--------------------------------------------------
 
+void* FctThreadScore(void *){
+	//score et MAJScore	
+	
+	
+	while (true){
+
+		pthread_mutex_lock(&mutexScore);
+		pthread_cond_wait(&condScore, &mutexScore);		
+		printf("mise a jour du score");
+		if(MAJScore){
+			afficherScore(score);
+			MAJScore = false ;
+		}
+		pthread_mutex_unlock(&mutexScore);
+
+	}
+	
+
+}
 
 
 
