@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 	afficherCage(4);
 	
 	// signaux
-
+	// sigquit 
 	sigemptyset(&sigAct.sa_mask);
 	sigAct.sa_handler = HandlerSIGQUIT ;
 	sigAct.sa_flags = 0; // 
@@ -118,8 +118,11 @@ int main(int argc, char* argv[])
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGUSR1);
 	sigprocmask(SIG_BLOCK, &mask, NULL);
-
-
+	// sigalarm
+	sigemptyset(&sigAct.sa_mask);
+	sigAct.sa_handler = HandlerSIGALRM;
+	sigAct.sa_flags = 0;
+	sigaction(SIGALRM, &sigAct, NULL);
 
 	afficherScore(0);
 	// creations des threads 
@@ -127,7 +130,10 @@ int main(int argc, char* argv[])
 	pthread_create(&threadEvenements ,NULL ,FctThreadEvenements , NULL);
 	pthread_create(&threadDK ,NULL ,FctThreadDK , NULL );
 	pthread_create(&threadScore ,NULL ,FctThreadScore , NULL );
-	
+	pthread_create(&threadEnnemis ,NULL ,FctThreadEnnemis , NULL );
+	alarm(15);
+
+
 	int nbr_vie = 3 ;
 	while (nbr_vie > 0){
 
@@ -188,6 +194,11 @@ void afficherGrilleJeu()
 
 void* FctThreadCle(void *){
 
+	// block sigalarm
+	sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &mask, 0);
+
 	int time = 1 ;
 	struct timespec temps = { 0, 700000000 };
 	bool sens  = true;
@@ -224,6 +235,12 @@ void* FctThreadCle(void *){
 //------------------------------------------------
 
 void* FctThreadEvenements(void * a ){
+
+	// block sigalarm
+	sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &mask, 0);
+
 struct timespec tempsfrap = { 0, 10 }; // todo change time here
 while(1){
 
@@ -279,6 +296,10 @@ void* FctThreadDKJr(void *){
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGQUIT);
 	sigprocmask(SIG_UNBLOCK, &mask, NULL);
+	// block sigalarm
+	sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &mask, 0);
 	
 	// afficher le dkjr 
 	pthread_mutex_lock(&mutexGrilleJeu);
@@ -513,7 +534,15 @@ void* FctThreadDKJr(void *){
 			
 }
 //--------------------------------------------------
+// thread DKJr
+//--------------------------------------------------
 void* FctThreadDK(void *){
+
+	// block sigalarm
+	sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &mask, 0);
+
 	struct timespec tmprire = { 0, 700000000 };
 	int numdecage = 1;
 	while (true)
@@ -557,14 +586,16 @@ void* FctThreadDK(void *){
 
 }
 
-
 //--------------------------------------------------
 //		thread score 
 //--------------------------------------------------
 
 void* FctThreadScore(void *){
 	//score et MAJScore	
-	
+	// block sigalarm
+	sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &mask, 0);
 	
 	while (true){
 
@@ -582,9 +613,52 @@ void* FctThreadScore(void *){
 
 }
 
+//--------------------------------------------------
+//				thread ennemies
+//--------------------------------------------------
+void* FctThreadEnnemis(void *){
+	// block sigalarm
+	sigemptyset(&mask);
+    sigaddset(&mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &mask, 0);
+
+	srand(time(NULL)); 
+	while (true)
+	{
+		struct timespec tmpgene ;
+		if(delaiEnnemis > 2500){
+		tmpgene = {  (int) (delaiEnnemis/1000), (delaiEnnemis%1000)*1000 };
+		}else
+		tmpgene =  {  2, 5000 };
+
+		// nano sleep 
+		nanosleep(&tmpgene, NULL) ; 
+		// aléatoire
+		int r = rand(); 
+		if(r%2==0){
+			// corbeau
+			printf("corbeau \n");
+		}else{
+			printf("croco \n");
+		}
+
+	}
+	
 
 
-// erreur -> bloquer grille jeu anniamation 
-// si win reafficher dkjr en bas
+}
 
+
+
+//--------------------------------------------------
+// handler ennemie
+//--------------------------------------------------
+void HandlerSIGALRM(int){
+	printf("alram déclanchée \n ");
+	alarm(15);
+	if(delaiEnnemis > 2500){
+		delaiEnnemis -= 250;
+	}
+
+}
 
